@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hamranes — Project Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:#0d1b2a; --navy-mid:#162032; --navy-light:#1e2f45;
+    --gold:#c9a84c; --gold-light:#e4c97a; --gold-dim:rgba(201,168,76,0.15);
+    --silver:#8da3b8; --white:#f0eeea; --text:#cfd8e3;
+    --border:rgba(201,168,76,0.2); --green:#4caf7d; --blue:#4a8cb8; --red:#e05757;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--navy);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;min-height:100vh;
+    background-image:radial-gradient(ellipse at 10% 20%,rgba(201,168,76,0.04) 0%,transparent 60%),
+    radial-gradient(ellipse at 90% 80%,rgba(13,60,100,0.3) 0%,transparent 60%);}
+
+  /* GATE */
+  #gate{position:fixed;inset:0;z-index:1000;background:var(--navy);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:24px;
+    background-image:radial-gradient(ellipse at 50% 40%,rgba(201,168,76,0.06) 0%,transparent 70%);}
+  #gate .logo-text{font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:300;color:var(--white);letter-spacing:12px;text-transform:uppercase;}
+  #gate .logo-text span{color:var(--gold);}
+  #gate .divider{width:60px;height:1px;background:var(--gold);opacity:0.6;}
+  #gate p{color:var(--silver);font-size:12px;letter-spacing:3px;text-transform:uppercase;}
+  #gate input{background:var(--navy-light);border:1px solid var(--border);color:var(--white);padding:14px 24px;
+    font-family:'DM Sans',sans-serif;font-size:14px;width:300px;text-align:center;letter-spacing:4px;outline:none;transition:border-color 0.2s;}
+  #gate input:focus{border-color:var(--gold);}
+  #gate button{background:var(--gold);color:var(--navy);border:none;padding:12px 40px;font-family:'DM Sans',sans-serif;
+    font-size:12px;font-weight:500;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:background 0.2s;width:300px;}
+  #gate button:hover{background:var(--gold-light);}
+  #gate .error{color:var(--red);font-size:11px;letter-spacing:2px;height:16px;}
+
+  #dashboard{display:none;}
+
+  header{display:flex;align-items:center;justify-content:space-between;padding:28px 40px;
+    border-bottom:1px solid var(--border);background:var(--navy-mid);}
+  .header-left{display:flex;align-items:baseline;gap:16px;}
+  .brand{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:400;color:var(--white);letter-spacing:6px;text-transform:uppercase;}
+  .brand span{color:var(--gold);}
+  .sub{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--silver);border-left:1px solid var(--border);padding-left:16px;}
+  .header-right{display:flex;align-items:center;gap:24px;}
+  .last-updated{font-size:11px;color:var(--silver);letter-spacing:1px;}
+  .live-badge{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--green);}
+  .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+  main{padding:32px 40px;display:flex;flex-direction:column;gap:28px;}
+
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+  .kpi-card{background:var(--navy-mid);border:1px solid var(--border);padding:24px 28px;position:relative;overflow:hidden;transition:border-color 0.2s;}
+  .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),transparent);}
+  .kpi-card:hover{border-color:rgba(201,168,76,0.4);}
+  .kpi-label{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--silver);margin-bottom:12px;}
+  .kpi-value{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:var(--white);line-height:1;}
+  .kpi-value .unit{font-size:16px;color:var(--gold);font-family:'DM Sans',sans-serif;font-weight:300;margin-left:4px;}
+  .kpi-sub{font-size:11px;color:var(--silver);margin-top:8px;}
+  .kpi-badge{display:inline-flex;align-items:center;font-size:10px;padding:2px 8px;border-radius:2px;font-weight:500;margin-top:8px;}
+  .badge-gold{background:var(--gold-dim);color:var(--gold);}
+  .badge-green{background:rgba(76,175,125,0.12);color:var(--green);}
+  .badge-blue{background:rgba(74,140,184,0.12);color:var(--blue);}
+  .badge-red{background:rgba(224,87,87,0.12);color:var(--red);}
+
+  .card{background:var(--navy-mid);border:1px solid var(--border);padding:28px;}
+  .charts-row{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;}
+  .bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .card-title{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--silver);margin-bottom:8px;
+    display:flex;align-items:center;gap:10px;}
+  .card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+  .card-subtitle{font-size:11px;color:rgba(141,163,184,0.55);margin-bottom:18px;font-style:italic;}
+  .chart-container{position:relative;}
+  .legend{display:flex;gap:20px;margin-bottom:18px;flex-wrap:wrap;}
+  .legend-item{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--silver);}
+  .legend-swatch{width:22px;height:3px;border-radius:2px;flex-shrink:0;}
+
+  /* variance badge on main chart */
+  .variance-box{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;}
+  .v-pill{padding:8px 16px;border-radius:2px;font-size:11px;display:flex;flex-direction:column;gap:3px;}
+  .v-pill .vl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;opacity:0.7;}
+  .v-pill .vv{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;}
+  .v-green{background:rgba(76,175,125,0.1);border:1px solid rgba(76,175,125,0.2);color:var(--green);}
+  .v-gold{background:var(--gold-dim);border:1px solid rgba(201,168,76,0.2);color:var(--gold);}
+  .v-blue{background:rgba(74,140,184,0.1);border:1px solid rgba(74,140,184,0.2);color:var(--blue);}
+
+  table{width:100%;border-collapse:collapse;}
+  thead tr{border-bottom:1px solid var(--border);}
+  th{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--silver);padding:8px 12px;text-align:left;font-weight:400;}
+  th:last-child,td:last-child{text-align:right;}
+  td{padding:11px 12px;font-size:12px;color:var(--text);border-bottom:1px solid rgba(201,168,76,0.06);}
+  tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:rgba(201,168,76,0.03);}
+  .td-code{font-size:10px;color:var(--gold);letter-spacing:1px;font-weight:500;}
+  .td-amount{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:400;color:var(--white);}
+  .progress-bar-wrap{width:100%;height:3px;background:rgba(201,168,76,0.1);border-radius:2px;margin-top:4px;}
+  .progress-bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--gold),var(--gold-light));min-width:3px;}
+
+  footer{text-align:center;padding:20px;border-top:1px solid var(--border);font-size:10px;
+    letter-spacing:2px;text-transform:uppercase;color:rgba(141,163,184,0.4);}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="logo-text">Ham<span>r</span>anes</div>
+  <div class="divider"></div>
+  <p>Project Dashboard — Restricted Access</p>
+  <input type="password" id="pwInput" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkPw()"/>
+  <button onclick="checkPw()">Enter</button>
+  <div class="error" id="pwError"></div>
+</div>
+
+<div id="dashboard">
+  <header>
+    <div class="header-left">
+      <div class="brand">Ham<span>r</span>anes</div>
+      <div class="sub">Kostnaðareftirlit · Project Dashboard</div>
+    </div>
+    <div class="header-right">
+      <div class="last-updated" id="lastUpdated"></div>
+      <div class="live-badge"><div class="live-dot"></div> Live</div>
+    </div>
+  </header>
+
+  <main>
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Heildaráætlun · Total Budget (BAC)</div>
+        <div class="kpi-value">5.55<span class="unit">ma.kr</span></div>
+        <div class="kpi-sub">Án VSK · Excl. VAT</div>
+        <div class="kpi-badge badge-gold">AACE Class 3–4</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Raunkostnaður · Actual Cost (AC)</div>
+        <div class="kpi-value">955<span class="unit">m.kr</span></div>
+        <div class="kpi-sub">17.2% af heildaráætlun</div>
+        <div class="kpi-badge badge-green">202 reikningar bókaðir</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Samningar · Commitments</div>
+        <div class="kpi-value">2.68<span class="unit">ma.kr</span></div>
+        <div class="kpi-sub">48.3% af heildaráætlun</div>
+        <div class="kpi-badge badge-blue">▲ 102M aukaverk</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Óvissa · Contingency Reserve</div>
+        <div class="kpi-value">286<span class="unit">m.kr</span></div>
+        <div class="kpi-sub">5.2% af heildar — óráðstafað</div>
+        <div class="kpi-badge badge-gold">AACE Class 3–4</div>
+      </div>
+    </div>
+
+    <!-- MAIN COST DEVELOPMENT CHART -->
+    <div class="card">
+      <div class="card-title">Cost Development — Planned Value vs. Actual Cost vs. Commitments</div>
+      <div class="card-subtitle">Cumulative figures in ISK excl. VAT. Actual cost (AC) from accounting system — 202 invoices through Mar 2026.</div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-swatch" style="background:#c9a84c"></div> Planned Value (PV) — Budget baseline</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#4caf7d"></div> Actual Cost (AC) — Bókhald import</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#4a8cb8"></div> Total Commitments — Contracts signed</div>
+      </div>
+      <div class="chart-container" style="height:300px">
+        <canvas id="costDevChart"></canvas>
+      </div>
+      <div class="variance-box">
+        <div class="v-pill v-green">
+          <span class="vl">AC to date</span>
+          <span class="vv">955 m.kr</span>
+        </div>
+        <div class="v-pill v-gold">
+          <span class="vl">PV at Feb 26</span>
+          <span class="vv">1,677 m.kr</span>
+        </div>
+        <div class="v-pill v-green">
+          <span class="vl">Schedule Variance (SV)</span>
+          <span class="vv">AC &lt; PV — Under plan</span>
+        </div>
+        <div class="v-pill v-blue">
+          <span class="vl">Commitments vs Budget</span>
+          <span class="vv">48.3% secured</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MONTHLY AC + DONUT -->
+    <div class="charts-row">
+      <div class="card">
+        <div class="card-title">Monthly Actual Cost — Bókhald import</div>
+        <div class="card-subtitle">Monthly invoices booked to date. Large Nov–Dec 2025 spike = construction commencement.</div>
+        <div class="chart-container" style="height:230px">
+          <canvas id="monthlyACChart"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Actual Cost by Category</div>
+        <div class="chart-container" style="height:230px">
+          <canvas id="acDonutChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUARTERLY + COMMITMENTS TABLE -->
+    <div class="bottom-row">
+      <div class="card">
+        <div class="card-title">Budget Breakdown — Total Project</div>
+        <div class="chart-container" style="height:220px">
+          <canvas id="budgetDonut"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Samningar · Commitments by Category</div>
+        <table>
+          <thead><tr><th>Kafli</th><th>Heiti</th><th>Samningur</th><th>Aukaverk</th></tr></thead>
+          <tbody id="commitTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+  <footer>Hamranes · Kostnaðareftirlit · Confidential — For authorised recipients only</footer>
+</div>
+
+<script>
+function checkPw(){
+  if(document.getElementById('pwInput').value==='Hamranes2026'){
+    document.getElementById('gate').style.display='none';
+    document.getElementById('dashboard').style.display='block';
+    initDashboard();
+  } else {
+    document.getElementById('pwError').textContent='Incorrect password';
+    document.getElementById('pwInput').value='';
+    setTimeout(()=>document.getElementById('pwError').textContent='',2000);
+  }
+}
+
+const gold='#c9a84c',silver='#8da3b8',blue='#4a8cb8',green='#4caf7d';
+const grid='rgba(201,168,76,0.07)';
+const tt={backgroundColor:'#162032',borderColor:'rgba(201,168,76,0.3)',borderWidth:1,titleColor:silver,bodyColor:'#f0eeea'};
+
+const LABELS = ["Aug 24","Sep 24","Oct 24","Nov 24","Dec 24","Jan 25","Feb 25","Mar 25","Apr 25","May 25","Jun 25","Jul 25","Aug 25","Sep 25","Oct 25","Nov 25","Dec 25","Jan 26","Feb 26","Mar 26","Apr 26","May 26","Jun 26","Jul 26","Aug 26","Sep 26","Oct 26","Nov 26","Dec 26"];
+
+const PV = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,311997360,727821306,867832367,1676713323,2322864991,2905033835,3264483275,3621318157,4069481719,4241214896,4412948073,4584681250,4756414427,4928147604];
+
+const AC_CUM = [0,0,0,18362743,19633873,86189629,90273412,102772909,107176669,113226816,130974777,140650932,150889375,166076564,185248874,523456505,853867185,936357336,949762704,950048383,950048383,950048383,950048383,950048383,950048383,950048383,950048383,950048383,955380584];
+// Show AC as null after last real data point (Mar 26 = index 19)
+const AC_DISPLAY = AC_CUM.map((v,i)=> i <= 19 ? v : null);
+
+const COMMITS = LABELS.map((_,i)=> i >= 18 ? 2682579262 : null);
+
+const AC_MONTHLY_LABELS = ["Nov 24","Dec 24","Jan 25","Feb 25","Mar 25","Apr 25","May 25","Jun 25","Jul 25","Aug 25","Sep 25","Oct 25","Nov 25","Dec 25","Jan 26","Feb 26","Mar 26"];
+const AC_MONTHLY_VALS   = [18362743,1271130,66555756,4083783,12499497,4403760,6050147,17747961,9676155,10238443,15187189,19172310,338207631,330410680,82490151,13405368,285679];
+
+function fmt(n){
+  if(!n&&n!==0) return '—';
+  if(Math.abs(n)>=1e9) return (n/1e9).toFixed(2)+' ma.kr';
+  if(Math.abs(n)>=1e6) return Math.round(n/1e6)+' m.kr';
+  return Math.round(n/1000)+' þ.kr';
+}
+
+function initDashboard(){
+  document.getElementById('lastUpdated').textContent='Uppfært: '+new Date().toLocaleDateString('is-IS',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+  // COST DEVELOPMENT
+  new Chart(document.getElementById('costDevChart'),{
+    type:'line',
+    data:{
+      labels:LABELS,
+      datasets:[
+        {label:'Planned Value (PV)',data:PV,borderColor:gold,borderWidth:2.5,
+          pointRadius:2,pointBackgroundColor:gold,fill:true,
+          backgroundColor:ctx=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,300);g.addColorStop(0,'rgba(201,168,76,0.1)');g.addColorStop(1,'rgba(201,168,76,0)');return g;},
+          tension:0.4,order:3},
+        {label:'Actual Cost (AC)',data:AC_DISPLAY,borderColor:green,borderWidth:2.5,
+          pointRadius:ctx=>AC_DISPLAY[ctx.dataIndex]!==null&&AC_DISPLAY[ctx.dataIndex]>0?3:0,
+          pointBackgroundColor:green,fill:false,tension:0.3,order:1},
+        {label:'Commitments',data:COMMITS,borderColor:blue,borderWidth:2,
+          borderDash:[],pointRadius:ctx=>COMMITS[ctx.dataIndex]!==null?4:0,
+          pointBackgroundColor:blue,fill:false,tension:0,order:2},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{...tt,callbacks:{label:ctx=>ctx.raw===null?null:' '+ctx.dataset.label+': '+fmt(ctx.raw)}}
+      },
+      scales:{
+        x:{grid:{color:grid},ticks:{color:silver,font:{size:10},maxTicksLimit:15}},
+        y:{grid:{color:grid},ticks:{color:silver,font:{size:10},callback:v=>(v/1e9).toFixed(1)+'ma'},max:6e9}
+      }
+    }
+  });
+
+  // MONTHLY AC BARS
+  new Chart(document.getElementById('monthlyACChart'),{
+    type:'bar',
+    data:{
+      labels:AC_MONTHLY_LABELS,
+      datasets:[{
+        label:'Raunkostnaður',
+        data:AC_MONTHLY_VALS,
+        backgroundColor:AC_MONTHLY_VALS.map(v=>v>200e6?'rgba(201,168,76,0.9)':v>50e6?'rgba(201,168,76,0.7)':'rgba(201,168,76,0.45)'),
+        borderColor:gold,borderWidth:1,borderRadius:2
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:ctx=>' '+fmt(ctx.raw)}}},
+      scales:{
+        x:{grid:{display:false},ticks:{color:silver,font:{size:9}}},
+        y:{grid:{color:grid},ticks:{color:silver,font:{size:10},callback:v=>v>=1e6?(v/1e6).toFixed(0)+'m':''+v}}
+      }
+    }
+  });
+
+  // AC BY CATEGORY DONUT
+  new Chart(document.getElementById('acDonutChart'),{
+    type:'doughnut',
+    data:{
+      labels:['Framkvæmd','Lóð og gjöld','Hönnun','Stjórnun','Umsýsla','Annað'],
+      datasets:[{
+        data:[393121955,287426383,213259308,53635254,17423019,483974],
+        backgroundColor:['#c9a84c','#4a7fa5','#5c9e7a','#a06090','#4a8cb8','#6a6a6a'],
+        borderColor:'#162032',borderWidth:2,hoverOffset:6
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'65%',
+      plugins:{
+        legend:{position:'right',labels:{color:silver,font:{size:10},boxWidth:12,padding:10}},
+        tooltip:{...tt,callbacks:{label:ctx=>' '+fmt(ctx.raw)+'  ('+(ctx.raw/955380584*100).toFixed(1)+'%)'}}
+      }
+    }
+  });
+
+  // BUDGET DONUT
+  new Chart(document.getElementById('budgetDonut'),{
+    type:'doughnut',
+    data:{
+      labels:['Einingar VBC','Hönnun & Umsýsla','Aðstaða','Lagnir','Rafkerfi','Annað'],
+      datasets:[{
+        data:[2214188701,1293139173,213122258,320991312,293989749,218153315],
+        backgroundColor:['#c9a84c','#4a7fa5','#5c9e7a','#a06090','#4a8cb8','#7a9e5c'],
+        borderColor:'#162032',borderWidth:2,hoverOffset:6
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'65%',
+      plugins:{
+        legend:{position:'right',labels:{color:silver,font:{size:10},boxWidth:12,padding:10}},
+        tooltip:{...tt,callbacks:{label:ctx=>' '+fmt(ctx.raw)+'  ('+(ctx.raw/5553384508*100).toFixed(1)+'%)'}}
+      }
+    }
+  });
+
+  // COMMITMENTS TABLE
+  const tbody=document.getElementById('commitTable');
+  const commits=[
+    {code:'AE',name:'Hönnun og ráðgjafar',c:312449504,v:0},
+    {code:'0', name:'Aðstaða og umsjón',   c:137473256,v:0},
+    {code:'1', name:'Jarðvinna',            c:42676008, v:3418548},
+    {code:'3', name:'Lagnir og loftræsing', c:8634504,  v:0},
+    {code:'4', name:'Rafkerfi',             c:24925300, v:0},
+    {code:'6', name:'Einingar VBC',         c:2054344652,v:88586925},
+  ];
+  const tot=commits.reduce((s,r)=>s+r.c+r.v,0);
+  commits.forEach(r=>{
+    const total=r.c+r.v,pct=(total/tot*100).toFixed(1);
+    tbody.innerHTML+=`<tr>
+      <td class="td-code">${r.code}</td><td>${r.name}</td>
+      <td class="td-amount">${fmt(r.c)}</td>
+      <td class="td-amount" style="color:${r.v>0?'#c9a84c':'#8da3b8'}">${r.v>0?'+'+fmt(r.v):'—'}</td>
+    </tr>
+    <tr><td colspan="4" style="padding:0 12px 8px"><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div></td></tr>`;
+  });
+}
+</script>
+</body>
+</html>
